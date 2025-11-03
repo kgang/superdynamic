@@ -10,13 +10,13 @@
 
 This audit validates the reference implementation's compliance with the MCP Authorization Specification and identifies areas requiring attention before production deployment.
 
-**Overall Status**: ✅ **COMPLIANT for Development/Testing**
+**Overall Status**: ✅ **FULLY COMPLIANT for Development/Testing**
 
 **Key Findings**:
 - ✅ All mandatory OAuth 2.0 and PKCE requirements met
 - ✅ Discovery mechanisms properly implemented
 - ✅ Token validation and authentication correct
-- ⚠️ **1 Security Enhancement Needed**: Missing audience (`aud`) claim in JWT tokens
+- ✅ **JWT audience claims implemented and validated**
 - ⚠️ **Development-Only Features**: Auto-approval and in-memory storage not suitable for production
 
 ---
@@ -170,7 +170,7 @@ return secrets.compare_digest(computed_challenge, code_challenge)
 | Token contains scope | ✅ | `scope` claim | Line 49 |
 | Token contains expiration | ✅ | `exp` claim (60 min default) | Line 50 |
 | Token contains issuer | ✅ | `iss` claim with server URL | Line 52 |
-| **Token contains audience** | ⚠️ | **MISSING `aud` claim** | **FINDING** |
+| **Token contains audience** | ✅ | **`aud` claim with server URL** | Line 53 |
 
 **JWT Claims Example**:
 ```json
@@ -180,21 +180,18 @@ return secrets.compare_digest(computed_challenge, code_challenge)
   "scope": "mcp:tools:read mcp:tools:execute",
   "exp": 1699568400,
   "iat": 1699564800,
-  "iss": "http://localhost:8000"
-  // MISSING: "aud": "http://localhost:8000"
+  "iss": "http://localhost:8000",
+  "aud": "http://localhost:8000"
 }
 ```
 
-**🔴 SECURITY FINDING**: Missing audience (`aud`) claim violates OAuth 2.1 best practices and MCP spec emphasis on audience validation.
+**✅ SECURITY REQUIREMENT MET**: Audience (`aud`) claim properly included in JWT tokens and validated during token verification.
 
-**Impact**:
-- Tokens could theoretically be used at different MCP servers
-- Violates principle of least privilege
-- Confused deputy attacks possible if tokens are leaked
+**Implementation**:
+- Audience claim added: `server/app/oauth/token.py:53`
+- Validation added: `server/app/oauth/token.py:82` (via `audience` parameter in `jwt.decode()`)
 
-**Recommendation**: Add `aud` claim to JWT tokens in `server/app/oauth/token.py:create_access_token()`
-
-**Verdict**: ⚠️ **NON-COMPLIANT - SECURITY ENHANCEMENT REQUIRED**
+**Verdict**: ✅ **FULLY COMPLIANT**
 
 ---
 
@@ -203,11 +200,23 @@ return secrets.compare_digest(computed_challenge, code_challenge)
 | Requirement | Status | Implementation | Location |
 |-------------|--------|----------------|----------|
 | Validate tokens per OAuth 2.1 Section 5.2 | ✅ | JWT signature and expiration checked | `server/app/oauth/token.py:77-89` |
-| Validate token audience | ⚠️ | **Not validated** (missing `aud` claim) | N/A |
+| Validate token audience | ✅ | **Validated via `audience` parameter** | `server/app/oauth/token.py:82` |
 | Return 401 for invalid tokens | ✅ | Proper HTTP status codes | `server/app/oauth/token.py:85-89` |
 | Include WWW-Authenticate header | ✅ | Added on 401 responses | Line 88 |
 
-**Verdict**: ⚠️ **AUDIENCE VALIDATION MISSING**
+**Audience Validation Implementation**:
+```python
+payload = jwt.decode(
+    token,
+    settings.JWT_SECRET_KEY,
+    algorithms=[settings.JWT_ALGORITHM],
+    audience=settings.SERVER_URL  # Automatic validation by python-jose
+)
+```
+
+When the `audience` parameter is provided to `jwt.decode()`, the python-jose library automatically validates that the token's `aud` claim matches the expected audience, raising a `JWTError` if it doesn't match.
+
+**Verdict**: ✅ **FULLY COMPLIANT**
 
 ---
 
@@ -229,11 +238,13 @@ return secrets.compare_digest(computed_challenge, code_challenge)
 
 | Security Control | Status | Notes |
 |------------------|--------|-------|
-| Clients include `resource` parameter | ⚠️ | Not enforced by server |
-| Servers validate token audience | ⚠️ | **Missing `aud` claim validation** |
-| Prevents token reuse across services | ⚠️ | Not fully enforced |
+| Clients include `resource` parameter | ⚠️ | Not enforced by server (acceptable for mock) |
+| Servers validate token audience | ✅ | **`aud` claim validated** |
+| Prevents token reuse across services | ✅ | Enforced via audience validation |
 
-**Verdict**: ⚠️ **PARTIAL COMPLIANCE**
+**Implementation**: Tokens include `aud` claim with server URL, and validation ensures tokens are only accepted by the intended MCP server. Any attempt to use a token at a different server will fail audience validation.
+
+**Verdict**: ✅ **COMPLIANT** (resource parameter validation recommended but not required for mock server)
 
 ---
 
@@ -317,17 +328,12 @@ return secrets.compare_digest(computed_challenge, code_challenge)
 
 ### 🔴 Critical (Must Fix for Production)
 
-1. **Missing Audience Claim in JWTs**
-   - **Location**: `server/app/oauth/token.py:create_access_token()`
-   - **Fix**: Add `"aud": settings.SERVER_URL` to JWT claims
-   - **Validation**: Add audience check in `verify_access_token()`
-
-2. **No User Consent Flow**
+1. **No User Consent Flow**
    - **Location**: `server/app/oauth/authorize.py:68-115` (auto-approval)
    - **Fix**: Implement consent UI showing requested permissions
    - **User Impact**: Users cannot review what AI can access
 
-3. **HTTP in Production**
+2. **HTTP in Production**
    - **Location**: Configuration and deployment
    - **Fix**: Enforce HTTPS for all OAuth endpoints
    - **Security Impact**: Tokens and codes exposed in transit
@@ -336,17 +342,17 @@ return secrets.compare_digest(computed_challenge, code_challenge)
 
 ### ⚠️ Recommended (Enhance Security)
 
-4. **Refresh Token Rotation**
+3. **Refresh Token Rotation**
    - **Location**: `server/app/oauth/token.py:244` (refresh grant)
    - **Benefit**: Mitigates refresh token theft
    - **Complexity**: Moderate
 
-5. **Resource Parameter Validation**
+4. **Resource Parameter Validation**
    - **Location**: `server/app/oauth/authorize.py` and `token.py`
    - **Benefit**: Enforces client compliance with MCP spec
    - **Complexity**: Low
 
-6. **Persistent Storage**
+5. **Persistent Storage**
    - **Location**: `server/app/storage.py`
    - **Fix**: Use PostgreSQL, Redis, or similar
    - **Benefit**: Survive restarts, enable token revocation
@@ -355,6 +361,7 @@ return secrets.compare_digest(computed_challenge, code_challenge)
 
 ### ✅ Compliant
 
+6. ✅ JWT Audience Claims and Validation
 7. ✅ Dynamic Client Registration (RFC 7591)
 8. ✅ PKCE Implementation (RFC 7636)
 9. ✅ Authorization Server Metadata (RFC 8414)
@@ -370,13 +377,15 @@ return secrets.compare_digest(computed_challenge, code_challenge)
 
 ## Code Changes Required for Full Compliance
 
-### 1. Add Audience Claim to JWT
+### ✅ 1. Add Audience Claim to JWT - **COMPLETED**
 
 **File**: `server/app/oauth/token.py`
 
-**Change**:
+**Status**: ✅ **Implemented in commit 80da9b9**
+
+**Implementation**:
 ```python
-# Line 46-52
+# Line 46-53
 claims = {
     "sub": user_id,
     "client_id": client_id,
@@ -384,20 +393,22 @@ claims = {
     "exp": expires_at,
     "iat": datetime.utcnow(),
     "iss": settings.SERVER_URL,
-    "aud": settings.SERVER_URL,  # ADD THIS LINE
+    "aud": settings.SERVER_URL,  # ✅ ADDED
 }
 ```
 
 **Validation**:
 ```python
-# In verify_access_token(), add after line 82:
-if payload.get("aud") != settings.SERVER_URL:
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Token audience mismatch",
-        headers={"WWW-Authenticate": "Bearer"}
-    )
+# Line 78-82 in verify_access_token()
+payload = jwt.decode(
+    token,
+    settings.JWT_SECRET_KEY,
+    algorithms=[settings.JWT_ALGORITHM],
+    audience=settings.SERVER_URL  # ✅ ADDED - automatic validation by python-jose
+)
 ```
+
+The python-jose library automatically validates the audience claim when the `audience` parameter is provided to `jwt.decode()`, raising a `JWTError` if the token's `aud` claim doesn't match.
 
 ---
 
@@ -457,7 +468,7 @@ if payload.get("aud") != settings.SERVER_URL:
 
 ## Production Readiness Checklist
 
-- [ ] Add `aud` claim to JWT tokens and validate on use
+- [x] Add `aud` claim to JWT tokens and validate on use ✅ **COMPLETED**
 - [ ] Implement user consent UI for authorization requests
 - [ ] Deploy with HTTPS (TLS 1.2+)
 - [ ] Replace in-memory storage with persistent database
@@ -479,8 +490,10 @@ if payload.get("aud") != settings.SERVER_URL:
 
 The reference implementation **demonstrates the core OAuth 2.0 + DCR + MCP flow correctly** and is **suitable for development and testing purposes**.
 
+**Security Status**: ✅ All core security requirements met, including JWT audience claims and validation.
+
 **For production deployment**, the following changes are **mandatory**:
-1. Add JWT audience claims and validation
+1. ~~Add JWT audience claims and validation~~ ✅ **COMPLETED**
 2. Implement user consent UI
 3. Use HTTPS for all endpoints
 4. Implement persistent storage
