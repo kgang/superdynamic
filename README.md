@@ -4,6 +4,7 @@
 
 This repository demonstrates how to implement **OAuth 2.0 Authorization** with **Dynamic Client Registration (DCR)** for the **Model Context Protocol (MCP)**, enabling AI applications to securely access user-authorized enterprise tools and data.
 
+[![Tests](https://github.com/kgang/superdynamic/actions/workflows/test.yml/badge.svg)](https://github.com/kgang/superdynamic/actions/workflows/test.yml)
 [![MCP Spec](https://img.shields.io/badge/MCP%20Spec-2025--06--18-blue)](https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization)
 [![RFC 7591](https://img.shields.io/badge/RFC%207591-DCR-green)](https://datatracker.ietf.org/doc/html/rfc7591)
 [![RFC 7636](https://img.shields.io/badge/RFC%207636-PKCE-green)](https://datatracker.ietf.org/doc/html/rfc7636)

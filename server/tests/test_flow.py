@@ -303,5 +303,49 @@ class TestOAuthMCPFlow:
 
 
 if __name__ == "__main__":
-    test = TestOAuthMCPFlow()
-    test.test_complete_flow()
+    import sys
+    import time
+
+    # Add retry logic for CI/CD environments where server might need extra time
+    max_retries = 3
+    retry_delay = 2
+
+    for attempt in range(max_retries):
+        try:
+            # Quick health check before running tests
+            with httpx.Client() as client:
+                try:
+                    response = client.get(f"{TestOAuthMCPFlow.BASE_URL}/health", timeout=5.0)
+                    if response.status_code != 200:
+                        if attempt < max_retries - 1:
+                            print(f"⚠ Server health check failed (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...")
+                            time.sleep(retry_delay)
+                            continue
+                        else:
+                            print("❌ Server health check failed after all retries")
+                            sys.exit(1)
+                except httpx.ConnectError:
+                    if attempt < max_retries - 1:
+                        print(f"⚠ Cannot connect to server (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...")
+                        time.sleep(retry_delay)
+                        continue
+                    else:
+                        print(f"❌ ERROR: Cannot connect to server at {TestOAuthMCPFlow.BASE_URL}")
+                        print("   Make sure the server is running:")
+                        print("   cd server && uvicorn app.main:app --reload")
+                        sys.exit(1)
+
+            # Run the test
+            test = TestOAuthMCPFlow()
+            test.test_complete_flow()
+            print("\n✅ Test suite completed successfully")
+            sys.exit(0)
+
+        except AssertionError as e:
+            print(f"\n❌ Test assertion failed: {e}")
+            sys.exit(1)
+        except Exception as e:
+            print(f"\n❌ Unexpected error: {e}")
+            import traceback
+            traceback.print_exc()
+            sys.exit(1)
