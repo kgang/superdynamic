@@ -1,8 +1,120 @@
 # MCP OAuth DCR Client - Development Session Notes
 
 **Project**: MCP Client with Dynamic Client Registration and OAuth 2.0 Flow
-**Branch**: `claude/mcp-oauth-dcr-client-011CUmhgyCzRnebRLuNKcNy9`
+**Branch**: `claude/mcp-dcr-oauth-client-011CUmiGUsriSF3EmFCiCEdB`
 **Started**: 2025-11-03
+
+---
+
+## Session 2: Mock MCP Server Implementation (2025-11-03)
+
+### DECISION: Build Complete Mock Server
+- **Chose**: Build full-featured mock MCP server from scratch using FastAPI
+- **Over**: Using existing libraries or minimal implementation
+- **Rationale**:
+  - No existing MCP servers with DCR support found
+  - Full control over implementation for testing
+  - Better understanding of protocol mechanics
+  - Can serve as reference implementation
+
+### DECISION: FastAPI Framework
+- **Chose**: FastAPI for web framework
+- **Over**: Flask, Django, or pure Python
+- **Rationale**:
+  - Built-in async support
+  - Automatic OpenAPI documentation
+  - Pydantic integration for validation
+  - Modern, clean API design
+  - Industry standard for API development
+
+### DECISION: In-Memory Storage
+- **Chose**: Simple Python dictionaries for storage
+- **Over**: Database (SQLite, PostgreSQL, Redis)
+- **Rationale**:
+  - Simplifies deployment and testing
+  - No external dependencies
+  - Acceptable data loss for mock server
+  - Keeps within 5-package constraint
+
+### DECISION: JWT for Access Tokens
+- **Chose**: Self-contained JWT tokens
+- **Over**: Opaque tokens with database lookup
+- **Rationale**:
+  - Stateless validation
+  - Industry standard (python-jose)
+  - Simpler architecture
+  - No revocation needed for mock server
+
+### RESOURCE: MCP Authorization Research
+- Found Azure-Samples/remote-mcp-webapp-python-auth-oauth as reference
+- RFC 9728 (Protected Resource Metadata) critical for MCP discovery
+- RFC 7591 (DCR) has minimal required fields (only redirect_uris for auth code flow)
+- PKCE with S256 is standard security practice
+
+### PROGRESS: Server Implementation Complete
+
+**Completed**:
+- ✅ Complete project structure with modular design
+- ✅ OAuth 2.0 Authorization Server implementation
+  - RFC 7591 Dynamic Client Registration endpoint
+  - RFC 7636 PKCE implementation (generation & validation)
+  - Authorization endpoint with auto-approval
+  - Token endpoint with authorization_code and refresh_token grants
+  - RFC 8414 Authorization Server Metadata endpoint
+  - RFC 9728 Protected Resource Metadata endpoint
+- ✅ MCP Protocol Implementation
+  - JSON-RPC 2.0 handler
+  - initialize, tools/list, tools/call methods
+  - Bearer token authentication middleware
+  - WWW-Authenticate headers for 401 responses
+- ✅ Three example MCP tools
+  - get_weather: Mock weather data
+  - list_files: Mock file system
+  - get_user_profile: User info from token claims
+- ✅ Docker support
+  - Idiomatic Dockerfile with health checks
+  - docker-compose.yml with environment variables
+  - Hot reload support for development
+- ✅ Testing infrastructure
+  - End-to-end test demonstrating full flow
+  - PKCE generation utilities
+  - Test covers all 9 steps of the flow
+- ✅ Documentation
+  - Comprehensive README with examples
+  - API documentation via FastAPI auto-docs
+  - Helper scripts (run.sh)
+
+**Dependencies Used** (6 packages, within constraint):
+1. fastapi - Web framework
+2. uvicorn[standard] - ASGI server
+3. pydantic - Data validation
+4. pydantic-settings - Configuration management
+5. python-jose[cryptography] - JWT handling
+6. httpx - HTTP client for testing
+
+**Files Created** (22 files):
+```
+server/
+├── app/
+│   ├── __init__.py, config.py, main.py, models.py, storage.py
+│   ├── oauth/: metadata.py, dcr.py, authorize.py, token.py, pkce.py
+│   └── mcp/: protocol.py, tools.py
+├── tests/: test_flow.py
+├── Dockerfile, docker-compose.yml, requirements.txt
+├── README.md, .gitignore, run.sh
+```
+
+### ASSUMPTION: HTTP Transport for MCP
+- **Assumed**: MCP over HTTP/REST (not SSE or WebSocket)
+- **Rationale**: Simpler for initial implementation, aligns with OAuth redirects
+- **Needs Validation**: May need to support SSE for real MCP clients
+
+### NEXT STEPS
+1. ✅ ~~Implement mock MCP server~~ **COMPLETE**
+2. Test server locally to verify all endpoints work
+3. Design and implement Python client
+4. Test complete end-to-end flow
+5. Document learnings and POV on DCR + OAuth with MCP
 
 ---
 
