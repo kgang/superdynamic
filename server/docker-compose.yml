@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mcp-oauth-server
+    ports:
+      - "8000:8000"
+    environment:
+      # JWT configuration
+      - JWT_SECRET_KEY=dev-secret-key-change-in-production-use-openssl-rand-hex-32
+      - JWT_ALGORITHM=HS256
+      - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=60
+
+      # Server configuration
+      - SERVER_URL=http://localhost:8000
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8000
+
+      # OAuth configuration
+      - OAUTH_AUTHORIZATION_CODE_EXPIRE_MINUTES=10
+      - OAUTH_REFRESH_TOKEN_EXPIRE_DAYS=30
+
+      # Development settings
+      - DEBUG=true
+      - LOG_LEVEL=INFO
+
+    volumes:
+      # Mount source code for development (hot reload)
+      - ./app:/app/app
+
+    restart: unless-stopped
+
+    networks:
+      - mcp-network
+
+networks:
+  mcp-network:
+    driver: bridge

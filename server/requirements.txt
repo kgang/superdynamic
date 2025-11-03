@@ -1,0 +1,16 @@
+# MCP OAuth DCR Server Dependencies
+# Maximum 5 PyPI packages as per requirements
+
+# Web framework and server
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+
+# Data validation
+pydantic==2.9.2
+pydantic-settings==2.5.2
+
+# JWT token handling
+python-jose[cryptography]==3.3.0
+
+# HTTP client for testing
+httpx==0.27.2
