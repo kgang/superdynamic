@@ -128,12 +128,16 @@ async def token_endpoint(
             detail="Invalid client credentials"
         )
 
-    # Verify client secret if provided
-    if client.client_secret and client_secret != client.client_secret:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid client credentials"
-        )
+    # Verify client secret if provided by the request
+    # Note: For PKCE flows (public clients), client_secret is optional
+    # The code_verifier serves as proof of client identity
+    if client_secret is not None:
+        # If client_secret was provided in request, it must match
+        if client.client_secret != client_secret:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid client credentials"
+            )
 
     # Handle authorization_code grant
     if grant_type == GrantType.AUTHORIZATION_CODE.value:

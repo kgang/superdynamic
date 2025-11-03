@@ -138,7 +138,13 @@ class TestOAuthMCPFlow:
                 data=token_request
             )
 
-            assert response.status_code == 200
+            if response.status_code != 200:
+                print(f"\n❌ Token exchange failed!")
+                print(f"  Status Code: {response.status_code}")
+                print(f"  Response Body: {response.text}")
+                print(f"  Request Data: {token_request}")
+
+            assert response.status_code == 200, f"Expected 200, got {response.status_code}. Response: {response.text}"
             token_response = response.json()
 
             access_token = token_response["access_token"]
