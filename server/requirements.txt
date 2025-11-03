@@ -1,5 +1,5 @@
 # MCP OAuth DCR Server Dependencies
-# Maximum 5 PyPI packages as per requirements
+# Maximum 25 PyPI packages as per requirements
 
 # Web framework and server
 fastapi==0.115.0
@@ -14,3 +14,5 @@ python-jose[cryptography]==3.3.0
 
 # HTTP client for testing
 httpx==0.27.2
+
+python-multipart==0.0.20

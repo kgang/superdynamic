@@ -34,7 +34,6 @@
   - Simplifies deployment and testing
   - No external dependencies
   - Acceptable data loss for mock server
-  - Keeps within 5-package constraint
 
 ### DECISION: JWT for Access Tokens
 - **Chose**: Self-contained JWT tokens
@@ -187,7 +186,7 @@ server/
 - [ ] Understand DCR registration endpoint requirements
 - [ ] Map out OAuth 2.0 + PKCE flow in MCP context
 - [ ] Design client architecture
-- [ ] Identify dependencies (max 5 packages)
+- [ ] Identify dependencies (max 25 packages)
 
 ### Phase 2: Server Setup
 - [ ] Implement or configure mock MCP server
