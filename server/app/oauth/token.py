@@ -50,6 +50,7 @@ def create_access_token(
         "exp": expires_at,
         "iat": datetime.utcnow(),
         "iss": settings.SERVER_URL,
+        "aud": settings.SERVER_URL
     }
 
     token = jwt.encode(
@@ -78,7 +79,8 @@ def verify_access_token(token: str) -> Dict[str, Any]:
         payload = jwt.decode(
             token,
             settings.JWT_SECRET_KEY,
-            algorithms=[settings.JWT_ALGORITHM]
+            algorithms=[settings.JWT_ALGORITHM],
+            audience=settings.SERVER_URL
         )
         return payload
     except JWTError as e:
