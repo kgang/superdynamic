@@ -48,12 +48,57 @@ Server available at: `http://localhost:8000`
 - **API Docs**: http://localhost:8000/docs
 - **Health Check**: http://localhost:8000/health
 
+### Use the Client
+
+The client provides a complete implementation of DCR + OAuth flow with multi-client lifecycle management:
+
+```bash
+# Install client dependencies
+pip install -r requirements.txt
+
+# Run the full demo (interactive - opens browser for authorization)
+python client.py --server-url http://localhost:8000 --demo
+
+# Or use individual commands:
+
+# Register a new OAuth client
+python client.py --server-url http://localhost:8000 --register
+
+# Authorize (opens browser)
+python client.py --server-url http://localhost:8000 --authorize
+
+# List available tools
+python client.py --server-url http://localhost:8000 --list-tools
+
+# Call a tool
+python client.py --server-url http://localhost:8000 --call-tool get_weather \
+  --args '{"location": "San Francisco", "units": "fahrenheit"}'
+
+# List all registered clients
+python client.py --list-clients
+
+# Refresh access token
+python client.py --server-url http://localhost:8000 --refresh
+```
+
+**Client Features:**
+- ✅ Dynamic Client Registration (RFC 7591)
+- ✅ OAuth 2.0 Authorization Code Flow with PKCE
+- ✅ Automatic browser-based authorization
+- ✅ Token refresh handling
+- ✅ Multi-client lifecycle management (manage OAuth clients for multiple MCP servers)
+- ✅ Persistent storage of client credentials and tokens
+- ✅ Automatic token expiration checking
+
 ### Test the Full Flow
 
 ```bash
-# In another terminal
+# Test server endpoints programmatically
 cd server
 python tests/test_flow.py
+
+# Test client with mock authorization (no browser required)
+python test_client.py
 ```
 
 This demonstrates:
@@ -62,6 +107,8 @@ This demonstrates:
 3. OAuth authorization code flow
 4. Token exchange
 5. Authenticated MCP tool invocation
+6. Token refresh
+7. Multi-client management
 
 ---
 
@@ -160,6 +207,9 @@ JSON-RPC 2.0 based tool invocation:
 ├── mcp_auth_spec_summary.md  # MCP spec summary
 ├── claude.md                 # Development session notes
 ├── requirements.md           # Technical requirements
+├── requirements.txt          # Client dependencies
+├── client.py                 # MCP OAuth DCR Client (main deliverable)
+├── test_client.py            # Client integration test
 └── server/                   # Mock MCP server implementation
     ├── app/
     │   ├── main.py          # FastAPI application
@@ -173,7 +223,7 @@ JSON-RPC 2.0 based tool invocation:
     │       ├── protocol.py  # JSON-RPC handler
     │       └── tools.py     # Example tools
     ├── tests/
-    │   └── test_flow.py     # End-to-end test
+    │   └── test_flow.py     # End-to-end server test
     ├── Dockerfile
     ├── docker-compose.yml
     └── README.md            # Server-specific documentation
