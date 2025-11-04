@@ -61,14 +61,14 @@ docker compose up --build
 
 ```bash
 # Run all tests
-python test_client.py           # Client tests
-cd server && python tests/test_flow.py  # Server tests
+pytest tests/test_client.py           # Client tests
+pytest tests/server/test_flow.py      # Server tests
 
 # Start server first for tests
 cd server
 uvicorn app.main:app --port 8000 &
 cd ..
-python test_client.py
+pytest tests/test_client.py
 ```
 
 ### Code Style
@@ -179,8 +179,10 @@ Security improvements are important but should be discussed first:
 
 1. **Run all tests**:
    ```bash
-   python test_client.py
-   cd server && python tests/test_flow.py
+   pytest tests/test_client.py
+   pytest tests/server/test_flow.py
+   # Or run all tests at once
+   pytest tests/
    ```
 
 2. **Check code quality**:

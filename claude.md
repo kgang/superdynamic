@@ -1,8 +1,9 @@
 # MCP OAuth DCR Client - Development Session Notes
 
 **Project**: MCP Client with Dynamic Client Registration and OAuth 2.0 Flow
-**Branch**: `claude/mcp-oauth-dcr-client-011CUmtbgFuyqfhJnWwBFvfL`
 **Started**: 2025-11-03
+
+> This document captures the development journey, key decisions, and insights from building this MCP OAuth DCR reference implementation.
 
 ---
 
@@ -135,14 +136,6 @@ This pattern enables:
 - **Session management**: Track authorization state per server
 - **Offline operation**: Use cached tokens when available
 
-### NEXT STEPS
-1. ✅ ~~Implement mock MCP server~~ **COMPLETE**
-2. ✅ ~~Design and implement Python client~~ **COMPLETE**
-3. ✅ ~~Test complete end-to-end flow~~ **COMPLETE**
-4. Commit and push client implementation
-5. Update session notes with learnings about client development
-6. Document POV on when DCR + OAuth is appropriate (already done)
-
 ---
 
 ## Session 2: Mock MCP Server Implementation (2025-11-03)
@@ -247,12 +240,6 @@ server/
 - **Rationale**: Simpler for initial implementation, aligns with OAuth redirects
 - **Needs Validation**: May need to support SSE for real MCP clients
 
-### NEXT STEPS
-1. ✅ ~~Implement mock MCP server~~ **COMPLETE**
-2. Test server locally to verify all endpoints work
-3. Design and implement Python client
-4. Test complete end-to-end flow
-5. Document learnings and POV on DCR + OAuth with MCP
 
 ---
 
@@ -274,83 +261,6 @@ server/
 - [RFC 7636 - PKCE](https://datatracker.ietf.org/doc/html/rfc7636)
 - [RFC 6749 - OAuth 2.0](https://datatracker.ietf.org/doc/html/rfc6749)
 
-### NEXT STEPS
-1. Research MCP Authorization spec in detail
-2. Identify or build mock server with DCR support
-3. Design client architecture
-4. Implement DCR registration flow
-5. Implement OAuth 2.0 + PKCE flow
-6. Implement MCP tool invocation
-7. Test end-to-end flow
-
----
-
-## Template for Future Sessions
-
-### BLOCKING
-- [ ] Issue description
-- [ ] What would unblock
-
-### DECISION
-- Chose X over Y because Z
-
-### ASSUMPTION
-- Assumed X, needs validation
-
-### RESOURCE
-- Useful doc/example at [URL]
-
-### PROGRESS
-- What was completed
-- What's in progress
-- What's next
-
----
-
-## Questions to Answer During Development
-
-1. **Architecture**: Should we build a standalone mock server or embed it?
-2. **OAuth Server**: Use existing OAuth library/server or build minimal implementation?
-3. **Token Storage**: How to handle token persistence between runs?
-4. **Error Handling**: What failure modes are most important to handle gracefully?
-5. **Testing**: Unit tests vs integration tests vs manual testing?
-6. **Use Cases**: When is DCR + OAuth appropriate vs other auth methods?
-
----
-
-## Implementation Checklist
-
-### Phase 1: Research & Design
-- [ ] Deep dive into MCP Authorization spec
-- [ ] Understand DCR registration endpoint requirements
-- [ ] Map out OAuth 2.0 + PKCE flow in MCP context
-- [ ] Design client architecture
-- [ ] Identify dependencies (max 25 packages)
-
-### Phase 2: Server Setup
-- [ ] Implement or configure mock MCP server
-- [ ] Add DCR registration endpoint
-- [ ] Add OAuth authorization endpoint
-- [ ] Add OAuth token endpoint
-- [ ] Add at least 2 MCP tools for testing
-
-### Phase 3: Client Implementation
-- [ ] CLI argument parsing
-- [ ] DCR registration logic
-- [ ] PKCE code challenge/verifier generation
-- [ ] OAuth authorization flow (with browser callback)
-- [ ] Token exchange
-- [ ] Token refresh (if time permits)
-- [ ] MCP tool invocation with auth headers
-
-### Phase 4: Testing & Documentation
-- [ ] End-to-end flow testing
-- [ ] Error case handling
-- [ ] README with setup/usage instructions
-- [ ] Architecture documentation
-- [ ] "When to use" guidance
-
----
 
 ## POV Development: When to Use DCR + OAuth with MCP
 

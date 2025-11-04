@@ -183,7 +183,7 @@ Host: mcp.example.com
 - 🔑 `scopes_supported`: What permissions are available
 - 🔑 `resource`: Canonical URI of this MCP server
 
-**Implementation**: `server/app/oauth/metadata.py:33-46`
+**Implementation**: `server/app/oauth/metadata.py`
 
 ---
 
@@ -218,7 +218,7 @@ Host: mcp.example.com
 - 🔑 `token_endpoint`: Where to exchange codes for tokens
 - 🔑 `code_challenge_methods_supported`: PKCE with S256 required
 
-**Implementation**: `server/app/oauth/metadata.py:13-30`
+**Implementation**: `server/app/oauth/metadata.py`
 
 ---
 
@@ -302,7 +302,7 @@ code_challenge = base64.urlsafe_b64encode(digest).decode('utf-8').rstrip('=')
 
 **Critical**: Client MUST remember `code_verifier` for Step 6!
 
-**Implementation**: `server/app/oauth/pkce.py:8-21`
+**Implementation**: `server/app/oauth/pkce.py`
 
 ---
 
@@ -409,7 +409,7 @@ client_id=client_d7f21a9c8b4e3f12
 }
 ```
 
-**Implementation**: `server/app/oauth/token.py:92-208`
+**Implementation**: `server/app/oauth/token.py`
 
 ---
 
@@ -480,7 +480,7 @@ Content-Type: application/json
 }
 ```
 
-**Implementation**: `server/app/mcp/protocol.py:164-242`
+**Implementation**: `server/app/mcp/protocol.py`
 
 ---
 
@@ -517,7 +517,7 @@ client_id=client_d7f21a9c8b4e3f12
 
 **Note**: In this implementation, refresh token is reused. OAuth 2.1 recommends **refresh token rotation** for public clients (issuing new refresh token each time).
 
-**Implementation**: `server/app/oauth/token.py:210-246`
+**Implementation**: `server/app/oauth/token.py`
 
 ---
 
@@ -764,4 +764,4 @@ All tests passed! ✅
 
 ---
 
-**Next Steps**: See [SECURITY_AUDIT.md](SECURITY_AUDIT.md) for compliance analysis and [ARCHITECTURE.md](ARCHITECTURE.md) for design rationale.
+**Next Steps**: See [security/](security/) for comprehensive security audits and [ARCHITECTURE.md](ARCHITECTURE.md) for design rationale.
