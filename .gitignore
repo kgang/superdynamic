@@ -193,3 +193,8 @@ shared/
 
 # Benchmarking
 benchmarks/logs/
+
+# MCP Client Storage
+.mcp_clients.json
+.test_clients.json
+*_clients.json

@@ -34,9 +34,28 @@ This is **essential for multi-user SaaS platforms** and **third-party AI integra
 
 ---
 
+## Requirements
+
+- **Python 3.10+** (tested on 3.10, 3.11, 3.12)
+- **Docker** (optional, for containerized deployment)
+
 ## Quick Start
 
-### Run the Server
+### ⚡ Fastest Way
+
+```bash
+# One-command demo (starts server + runs client)
+./quickstart.sh
+```
+
+This script will:
+1. Install dependencies
+2. Start the MCP server
+3. Let you choose between automated test or interactive demo
+
+### Manual Setup
+
+#### Run the Server
 
 ```bash
 cd server
@@ -338,6 +357,89 @@ python server/tests/test_flow.py
 ### Manual Testing with cURL
 
 See [server/README.md § Example Flow](server/README.md#example-flow) for detailed cURL examples.
+
+---
+
+## Troubleshooting
+
+### Server Issues
+
+**Server won't start:**
+```bash
+# Check if port 8000 is already in use
+lsof -i :8000
+# Kill the process if needed
+kill -9 <PID>
+```
+
+**Import errors:**
+```bash
+# Ensure all dependencies are installed
+pip install -r server/requirements.txt
+pip install -r requirements.txt
+```
+
+**JWT/Cryptography errors:**
+```bash
+# Reinstall cryptography dependencies
+pip install --force-reinstall cffi cryptography
+```
+
+### Client Issues
+
+**Browser doesn't open for OAuth:**
+- Manually copy the authorization URL from the terminal
+- Paste it into your browser
+- The redirect should still work
+
+**"Connection refused" errors:**
+- Ensure the server is running: `curl http://localhost:8000/health`
+- Check that you're using the correct server URL
+- Verify no firewall is blocking localhost:8000
+
+**Client storage issues:**
+```bash
+# Reset client storage
+rm .mcp_clients.json
+# Re-register client
+python client.py --server-url http://localhost:8000 --register
+```
+
+**Token expired errors:**
+```bash
+# Refresh the token
+python client.py --server-url http://localhost:8000 --refresh
+# Or re-authorize
+python client.py --server-url http://localhost:8000 --authorize
+```
+
+### Common Environment Issues
+
+**Python version too old:**
+```bash
+# Check version
+python3 --version
+# Needs Python 3.10 or higher
+```
+
+**Docker Compose issues:**
+```bash
+# Use docker compose (v2) instead of docker-compose (v1)
+docker compose up --build
+
+# Or install docker-compose v1
+sudo apt install docker-compose
+```
+
+### Getting Help
+
+1. Check the [server logs](server/server.log) or terminal output
+2. Review [ARCHITECTURE.md](ARCHITECTURE.md) for design details
+3. See [SECURITY_AUDIT.md](SECURITY_AUDIT.md) for security considerations
+4. Open an issue with:
+   - Python version (`python3 --version`)
+   - Error message and full traceback
+   - Steps to reproduce
 
 ---
 
