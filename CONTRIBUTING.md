@@ -143,7 +143,7 @@ Documentation improvements are always welcome:
 **Documentation files**:
 - `README.md` - Main overview and quick start
 - `ARCHITECTURE.md` - Design decisions and use cases
-- `SECURITY_AUDIT.md` - Security analysis
+- `security/` - Security audits for server and client
 - `FLOW_DIAGRAM.md` - Visual walkthrough
 - `server/README.md` - Server-specific docs
 
@@ -238,8 +238,10 @@ fix
 │   │   ├── oauth/          # OAuth endpoints (DCR, authorize, token)
 │   │   └── mcp/            # MCP protocol (tools, protocol handling)
 │   └── tests/              # Server tests
+├── security/                # Security audits
+│   ├── SERVER_SECURITY_AUDIT.md  # Server security analysis
+│   └── CLIENT_SECURITY_AUDIT.md  # Client security analysis
 ├── ARCHITECTURE.md          # Design documentation
-├── SECURITY_AUDIT.md        # Security review
 └── docs/                    # Additional documentation
 ```
 

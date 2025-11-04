@@ -198,7 +198,7 @@ JSON-RPC 2.0 based tool invocation:
 | Document | Purpose |
 |----------|---------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Design rationale, use cases, and "when to use" guidance |
-| [SECURITY_AUDIT.md](SECURITY_AUDIT.md) | Compliance analysis against MCP Authorization Spec |
+| [security/](security/) | Comprehensive security audits for server and client |
 | [FLOW_DIAGRAM.md](FLOW_DIAGRAM.md) | Visual walkthrough of the complete authorization flow |
 | [server/README.md](server/README.md) | Detailed API documentation and usage examples |
 | [mcp_auth_spec_summary.md](mcp_auth_spec_summary.md) | Summary of the MCP Authorization Specification |
@@ -221,7 +221,6 @@ JSON-RPC 2.0 based tool invocation:
 
 ```
 ├── ARCHITECTURE.md           # Design synthesis and use cases
-├── SECURITY_AUDIT.md         # Security compliance analysis
 ├── FLOW_DIAGRAM.md           # Visual authorization flow
 ├── mcp_auth_spec_summary.md  # MCP spec summary
 ├── claude.md                 # Development session notes
@@ -229,6 +228,10 @@ JSON-RPC 2.0 based tool invocation:
 ├── requirements.txt          # Client dependencies
 ├── client.py                 # MCP OAuth DCR Client (main deliverable)
 ├── test_client.py            # Client integration test
+├── security/                 # Security audits (server + client)
+│   ├── README.md            # Security overview and recommendations
+│   ├── SERVER_SECURITY_AUDIT.md  # Server security analysis
+│   └── CLIENT_SECURITY_AUDIT.md  # Client security analysis
 └── server/                   # Mock MCP server implementation
     ├── app/
     │   ├── main.py          # FastAPI application
@@ -297,7 +300,7 @@ See [ARCHITECTURE.md § When to Use This Approach](ARCHITECTURE.md#when-to-use-t
 4. **Persistent storage** (PostgreSQL, Redis, etc.)
 5. **Refresh token rotation** (OAuth 2.1 recommendation)
 
-See [SECURITY_AUDIT.md](SECURITY_AUDIT.md) for comprehensive security analysis.
+See [security/](security/) for comprehensive security audits of both server and client components.
 
 ---
 
@@ -435,7 +438,7 @@ sudo apt install docker-compose
 
 1. Check the [server logs](server/server.log) or terminal output
 2. Review [ARCHITECTURE.md](ARCHITECTURE.md) for design details
-3. See [SECURITY_AUDIT.md](SECURITY_AUDIT.md) for security considerations
+3. See [security/](security/) for security audits and recommendations
 4. Open an issue with:
    - Python version (`python3 --version`)
    - Error message and full traceback
@@ -480,4 +483,4 @@ Special thanks to the **MCP specification authors** at Anthropic for designing a
 
 **Questions?** See documentation or open an issue.
 
-**Ready to deploy?** Review [SECURITY_AUDIT.md](SECURITY_AUDIT.md) for production readiness checklist.
+**Ready to deploy?** Review [security/](security/) for production readiness checklists and security recommendations.
