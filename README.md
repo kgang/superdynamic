@@ -1,8 +1,8 @@
-# MCP OAuth DCR Reference Implementation
+# MCP OAuth DCR Client
 
-> **AI agent authorization infrastructure**: Dynamic Client Registration + OAuth 2.0 for the Model Context Protocol
+> **AI agent authorization client**: Dynamic Client Registration + OAuth 2.0 for the Model Context Protocol
 
-This repository demonstrates how to implement **OAuth 2.0 Authorization** with **Dynamic Client Registration (DCR)** for the **Model Context Protocol (MCP)**, enabling AI applications to securely access user-authorized enterprise tools and data.
+This repository provides a **production-ready client implementation** for connecting to MCP servers using **Dynamic Client Registration (DCR)** and **OAuth 2.0 Authorization**. This enables AI applications to securely access user-authorized enterprise tools and data without manual client registration or pre-shared credentials.
 
 [![Tests](https://github.com/kgang/superdynamic/actions/workflows/test.yml/badge.svg)](https://github.com/kgang/superdynamic/actions/workflows/test.yml)
 [![MCP Spec](https://img.shields.io/badge/MCP%20Spec-2025--06--18-blue)](https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization)
@@ -11,26 +11,56 @@ This repository demonstrates how to implement **OAuth 2.0 Authorization** with *
 
 ---
 
+## 🎯 Project Purpose
+
+**This project provides a production-ready CLIENT for connecting AI applications to MCP servers using Dynamic Client Registration.**
+
+- **Main Deliverable:** `client.py` - A Python client that implements DCR + OAuth 2.0 for MCP servers
+- **Supporting Infrastructure:** `server/` - A reference MCP server for testing (development/testing only)
+
+**Use the client** to connect your AI application to any MCP server supporting DCR (enterprise tools, custom data sources, etc.)
+
+**Use the server** to test your client implementation without needing access to production MCP servers.
+
+---
+
 ## What is This?
 
-This is a **reference implementation** and **educational resource** for understanding and implementing the [MCP Authorization Specification](https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization). It includes:
+This is a **client implementation** for connecting AI applications to MCP servers that support Dynamic Client Registration and OAuth 2.0 authorization, based on the [MCP Authorization Specification](https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization).
 
-- ✅ **Complete OAuth 2.0 Authorization Server** with Dynamic Client Registration (RFC 7591)
-- ✅ **MCP Server** with authenticated tool invocation
-- ✅ **PKCE Support** (RFC 7636) for secure public clients
-- ✅ **Docker-based deployment** for easy testing
-- ✅ **Comprehensive documentation** of architecture and security model
-- ✅ **Working examples** demonstrating the full authorization flow
+### The Client (`client.py`)
+
+The main deliverable is a **Python-based MCP OAuth DCR Client** that can:
+
+- ✅ **Automatically register** with any MCP server supporting DCR (RFC 7591)
+- ✅ **Handle OAuth 2.0 authorization** with PKCE (RFC 7636) for secure public clients
+- ✅ **Manage multi-server connections** with persistent credential storage
+- ✅ **Execute authenticated MCP tool calls** with automatic token handling
+- ✅ **Refresh tokens** automatically when they expire
+- ✅ **Provide clear error messages** for debugging authorization failures
+
+### The Reference Server (For Testing Only)
+
+To enable testing without requiring access to a real DCR-enabled MCP server, this repository also includes:
+
+- 📦 **Reference MCP server** with OAuth 2.0 + DCR support
+- 📦 **Docker-based deployment** for quick local testing
+- 📦 **Example MCP tools** (weather, files, user profile)
+
+**Note:** The server implementation is provided solely for testing and educational purposes. In production, you would connect the client to real enterprise MCP servers (Google Workspace, Salesforce, etc.) that support DCR.
 
 ### Why Does This Matter?
 
-The MCP Authorization Specification (released ~2 months ago) enables:
-- **User-centric AI**: AI agents acting on behalf of users with explicit consent
-- **Zero-touch onboarding**: Automatic client registration without manual setup
-- **Enterprise security**: Token-based auth with scoping, expiration, and audit trails
-- **Dynamic integrations**: Connect to arbitrary MCP servers without pre-registration
+The MCP Authorization Specification (released ~2 months ago) unlocks a powerful new paradigm for AI applications:
 
-This is **essential for multi-user SaaS platforms** and **third-party AI integrations** but relatively new with minimal production examples.
+- **Dynamic enterprise access**: Connect to any DCR-enabled MCP server without pre-configuration
+- **User-centric AI**: AI agents acting on behalf of users with explicit OAuth consent
+- **Zero-touch onboarding**: No manual client registration, API key management, or credential sharing
+- **Enterprise-grade security**: Token-based auth with scoping, expiration, and audit trails
+
+This client enables your AI application to seamlessly integrate with the emerging ecosystem of MCP servers across enterprise tools (Google Workspace, Salesforce, etc.) and custom data sources.
+
+**The Challenge:** While the MCP Authorization spec is only ~2 months old, there are minimal production examples showing how to implement the full DCR + OAuth flow from the client side. This implementation provides a clear, tested reference for building clients that can leverage this new capability.
 
 ---
 
@@ -44,30 +74,32 @@ This is **essential for multi-user SaaS platforms** and **third-party AI integra
 ### ⚡ Fastest Way
 
 ```bash
-# One-command demo (starts server + runs client)
+# One-command demo (starts test server + runs client)
 ./quickstart.sh
 ```
 
 This script will:
 1. Install dependencies
-2. Start the MCP server
+2. Start the **reference test server**
 3. Let you choose between automated test or interactive demo
 
 ### Manual Setup
 
-#### Run the Server
+#### 1. Start the Test Server (for development/testing)
 
 ```bash
 cd server
 docker-compose up --build
 ```
 
-Server available at: `http://localhost:8000`
+Test server available at: `http://localhost:8000`
 
 - **API Docs**: http://localhost:8000/docs
 - **Health Check**: http://localhost:8000/health
 
-### Use the Client
+**Note:** In production, you would skip this step and connect directly to a real MCP server URL that supports DCR.
+
+#### 2. Use the Client
 
 The client provides a complete implementation of DCR + OAuth flow with multi-client lifecycle management:
 
@@ -132,22 +164,33 @@ This demonstrates:
 
 ## Architecture Overview
 
+This client implements the full MCP authorization flow from the client perspective:
+
 ```
 ┌──────────────┐                           ┌───────────────────────┐
 │              │  1. Discover metadata     │                       │
 │              │ ────────────────────────► │   MCP Server          │
-│   AI Agent   │                           │   (Resource Server)   │
-│   (Client)   │  2. Register via DCR      │                       │
+│  MCP Client  │                           │   (Resource Server)   │
+│  (client.py) │  2. Register via DCR      │                       │
 │              │ ────────────────────────► │   + OAuth 2.0 Server  │
+│              │  ← Get client_id/secret   │                       │
+│              │                           │   - Issues tokens     │
+│              │  3. User authorization    │   - Validates PKCE    │
+│              │ ◄───────────────────────► │   - Executes tools    │
+│              │  ← Get auth code + token  │                       │
 │              │                           │                       │
-│              │  3. User authorization    │   - Issues tokens     │
-│              │ ◄───────────────────────► │   - Validates PKCE    │
-│              │                           │   - Executes tools    │
 │              │  4. Call MCP tools        │                       │
 │              │ ────────────────────────► │                       │
 │              │    (Bearer token auth)    │                       │
 └──────────────┘                           └───────────────────────┘
 ```
+
+**Client Features:**
+- Metadata discovery (RFC 8414, RFC 9728)
+- Dynamic Client Registration (RFC 7591)
+- OAuth 2.0 Authorization Code Flow with PKCE (RFC 7636)
+- Token management (refresh, expiration checking)
+- MCP JSON-RPC 2.0 protocol implementation
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed design rationale and use cases.
 
@@ -155,40 +198,44 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed design rationale and use cas
 
 ## Key Features
 
-### 1. Dynamic Client Registration (RFC 7591)
+### 1. Client Implementation (`client.py`)
 
-Clients self-register without manual intervention:
+The production-ready client that your AI application uses:
 
-```bash
-POST /oauth/register
-{
-  "redirect_uris": ["http://localhost:3000/callback"],
-  "client_name": "My AI Assistant"
-}
+**Dynamic Client Registration (RFC 7591):**
+```python
+# Client automatically registers with any MCP server
+python client.py --server-url https://mcp.example.com --register
 
-# Response: client_id, client_secret
+# Response stored in .mcp_clients.json:
+# - client_id
+# - client_secret
+# - token_endpoint
+# - authorization_endpoint
 ```
 
-### 2. OAuth 2.0 with PKCE (RFC 7636)
+**OAuth 2.0 with PKCE (RFC 7636):**
+- Automatic S256 code challenge generation
+- Browser-based authorization flow
+- Secure code verifier validation
+- Automatic token refresh handling
+- Multi-server credential management
 
-Secure authorization code flow for public clients:
-- S256 code challenge generation
-- Authorization endpoint with auto-approval (dev mode)
-- Token endpoint with code verifier validation
-- Refresh token support
+**MCP Protocol Implementation:**
+- JSON-RPC 2.0 tool invocation
+- Bearer token authentication
+- Clear error handling and reporting
+- Persistent token storage
 
-### 3. MCP Protocol Implementation
+### 2. Reference Test Server (Development Only)
 
-JSON-RPC 2.0 based tool invocation:
-- `POST /mcp/initialize` - Server handshake (no auth)
-- `POST /mcp/tools/list` - List available tools (requires auth)
-- `POST /mcp/tools/call` - Execute tool (requires auth)
+To facilitate testing without enterprise MCP servers, we provide a mock server with:
 
-### 4. Three Example Tools
+- **OAuth 2.0 Server**: Token issuance, PKCE validation, DCR endpoint
+- **MCP Server**: Three example tools (weather, files, user_profile)
+- **Docker deployment**: Quick local setup for development
 
-1. **get_weather** - Mock weather data
-2. **list_files** - Mock file system
-3. **get_user_profile** - User info from token claims
+**Note:** This server is for testing only. In production, you connect the client to real MCP servers.
 
 ---
 
@@ -219,23 +266,27 @@ JSON-RPC 2.0 based tool invocation:
 ## Project Structure
 
 ```
-├── ARCHITECTURE.md           # Design synthesis and use cases
-├── FLOW_DIAGRAM.md           # Visual authorization flow
-├── mcp_auth_spec_summary.md  # MCP spec summary
-├── claude.md                 # Development session notes
-├── requirements.md           # Technical requirements
+├── client.py                 # 🎯 MCP OAuth DCR Client (MAIN DELIVERABLE)
 ├── requirements.txt          # Client dependencies
-├── client.py                 # MCP OAuth DCR Client (main deliverable)
+├── .mcp_clients.json        # Persistent client storage (created on first run)
+│
+├── ARCHITECTURE.md           # Design rationale and use cases
+├── FLOW_DIAGRAM.md           # Visual authorization flow walkthrough
+├── mcp_auth_spec_summary.md  # MCP Authorization Spec summary
+├── requirements.md           # Technical requirements
+├── claude.md                 # Development session notes
+│
 ├── security/                 # Security audits and assessments
 │   ├── README.md                   # Security overview
 │   ├── components/                 # Component-specific audits
-│   │   ├── SERVER_SECURITY_AUDIT.md
-│   │   └── CLIENT_SECURITY_AUDIT.md
+│   │   ├── CLIENT_SECURITY_AUDIT.md  # Client security review
+│   │   └── SERVER_SECURITY_AUDIT.md  # Server security review
 │   └── complete-audits/            # System-wide assessments
-│       ├── IMPLEMENTATION_SUMMARY.md        # Comprehensive implementation details
+│       ├── IMPLEMENTATION_SUMMARY.md
 │       ├── LLM_CODE_ASSESSMENT_FRAMEWORK.md
 │       ├── VERIFIED_CRITICAL_FINDINGS.md
 │       └── ASSESSMENT_SUMMARY.md
+│
 ├── tests/                    # Test suite
 │   ├── conftest.py          # Pytest fixtures
 │   ├── test_client.py       # Client integration tests
@@ -243,40 +294,64 @@ JSON-RPC 2.0 based tool invocation:
 │   ├── README.md            # Test documentation
 │   └── server/
 │       └── test_flow.py     # Server OAuth flow tests
-└── server/                   # Mock MCP server implementation
+│
+└── server/                   # 📦 REFERENCE TEST SERVER (for development/testing)
     ├── app/
     │   ├── main.py          # FastAPI application
-    │   ├── oauth/           # OAuth 2.0 implementation
+    │   ├── oauth/           # OAuth 2.0 + DCR implementation
     │   │   ├── dcr.py       # Dynamic Client Registration
     │   │   ├── authorize.py # Authorization endpoint
     │   │   ├── token.py     # Token endpoint
     │   │   ├── pkce.py      # PKCE utilities
     │   │   └── metadata.py  # Discovery endpoints
-    │   └── mcp/             # MCP protocol
+    │   └── mcp/             # MCP protocol implementation
     │       ├── protocol.py  # JSON-RPC handler
     │       └── tools.py     # Example tools
     ├── Dockerfile
     ├── docker-compose.yml
-    └── README.md            # Server-specific documentation
+    └── README.md            # Server documentation
 ```
+
+**Key Components:**
+- **`client.py`**: The production client you integrate into your AI application
+- **`server/`**: A reference server for testing the client without enterprise MCP servers
+- **`security/`**: Comprehensive security audits of both client and server
+- **`tests/`**: Full test suite including end-to-end OAuth flows
 
 ---
 
-## When to Use This Approach
+## When to Use This Client
 
-### ✅ Recommended For
+### ✅ Use This Client When
 
-- **Multi-user SaaS MCP servers** (each user has their own data)
-- **Third-party AI integrations** (connecting to various enterprise systems)
-- **Dynamic onboarding scenarios** (no manual registration)
-- **Security/compliance requirements** (audit trails, user consent, token expiration)
+Your AI application needs to:
 
-### ❌ Not Recommended For
+- **Connect to multiple MCP servers dynamically** (Google Workspace, Salesforce, custom enterprise tools)
+- **Act on behalf of users** with OAuth consent and user-scoped permissions
+- **Avoid manual credential management** (no API keys, pre-registration, or credential sharing)
+- **Meet enterprise security requirements** (token-based auth, audit trails, expiration)
+- **Support multi-tenant SaaS** where each user connects to their own data sources
 
-- **Single-user local tools** (use API keys or environment variables)
-- **Trusted first-party integrations** (same organization owns both sides)
+### ❌ Don't Use This Client For
+
+- **Single-user local tools** (use API keys or environment variables instead)
 - **Public data access** (no authorization needed)
 - **STDIO-based MCP servers** (use environment credentials instead)
+- **First-party integrations** where you control both the client and server (simpler auth is fine)
+
+### When to Use the MCP DCR/OAuth Standard (Server Side)
+
+MCP servers should implement DCR + OAuth when:
+
+- ✅ Supporting **multi-user SaaS** (each user has their own data)
+- ✅ Enabling **third-party AI integrations** to your platform
+- ✅ Requiring **security/compliance** (audit trails, user consent, token expiration)
+
+MCP servers should **NOT** implement DCR + OAuth for:
+
+- ❌ **Single-user local tools**
+- ❌ **Trusted first-party integrations**
+- ❌ **Public data** with no access control needs
 
 See [ARCHITECTURE.md § When to Use This Approach](ARCHITECTURE.md#when-to-use-this-approach) for detailed guidance.
 
@@ -284,32 +359,47 @@ See [ARCHITECTURE.md § When to Use This Approach](ARCHITECTURE.md#when-to-use-t
 
 ## Security Considerations
 
-### ✅ Implemented Security Controls
+### Client Security (`client.py`)
 
-- ✅ PKCE (S256) prevents authorization code interception
-- ✅ Single-use authorization codes
-- ✅ Short-lived access tokens (60 min default)
-- ✅ Refresh token support
-- ✅ Redirect URI validation
-- ✅ JWT signature verification
-- ✅ Bearer token authentication
-- ✅ WWW-Authenticate headers on 401 responses
+The client implements OAuth 2.0 security best practices:
 
-### ⚠️ Development-Only Features
+**✅ Implemented Security Controls:**
+- ✅ **PKCE (S256)** - Prevents authorization code interception attacks
+- ✅ **Secure credential storage** - Client credentials and tokens stored locally in `.mcp_clients.json`
+- ✅ **Automatic token refresh** - Handles token expiration gracefully
+- ✅ **JWT signature verification** - Validates tokens from the server
+- ✅ **Bearer token authentication** - Proper Authorization header usage
+- ✅ **Redirect URI validation** - Ensures callbacks go to expected locations
 
-- **Auto-approval**: Authorization requests automatically approved (no consent UI)
-- **In-memory storage**: Data lost on restart
-- **HTTP allowed**: Production requires HTTPS
+**⚠️ Production Considerations:**
+- Ensure `.mcp_clients.json` has appropriate file permissions (not world-readable)
+- Use HTTPS for all MCP server connections in production
+- Consider encrypting stored credentials at rest for additional security
+- Implement proper token revocation when disconnecting from servers
 
-### 🔴 Production Enhancements Needed
+**See:** [security/components/CLIENT_SECURITY_AUDIT.md](security/components/CLIENT_SECURITY_AUDIT.md)
 
-1. **Add JWT audience claims** (`aud`) and validate them
-2. **Implement user consent UI** for authorization requests
-3. **Use HTTPS** for all endpoints
-4. **Persistent storage** (PostgreSQL, Redis, etc.)
-5. **Refresh token rotation** (OAuth 2.1 recommendation)
+### Test Server Security (`server/`)
 
-See [security/](security/) for comprehensive security audits of both server and client components.
+The reference test server is **for development/testing only** and includes:
+
+**✅ Development Features:**
+- ✅ Auto-approval of OAuth requests (no consent UI)
+- ✅ In-memory storage (data lost on restart)
+- ✅ HTTP support for localhost testing
+
+**🔴 NOT for Production:**
+1. Lacks persistent storage
+2. No user consent UI
+3. Simplified token validation
+4. Missing JWT audience claims
+5. No refresh token rotation
+
+**See:** [security/components/SERVER_SECURITY_AUDIT.md](security/components/SERVER_SECURITY_AUDIT.md)
+
+---
+
+**For Production:** Use real MCP servers (Google Workspace, Salesforce, etc.) with production-grade OAuth implementations. The client is production-ready; the server is not.
 
 ---
 
@@ -457,13 +547,13 @@ sudo apt install docker-compose
 
 ## Contributing
 
-This is a reference implementation for educational purposes. Contributions welcome for:
+This is a production-ready client implementation with a reference test server. Contributions welcome for:
 
-- Additional MCP tool examples
-- Security enhancements
-- Documentation improvements
-- Client implementation examples
-- Integration tests
+- **Client enhancements**: Additional OAuth flows, error handling improvements, security features
+- **Documentation improvements**: Usage examples, integration guides, troubleshooting tips
+- **Test coverage**: Additional integration tests, security tests, edge cases
+- **Server improvements**: Additional example MCP tools for testing, better OAuth flows
+- **Client examples**: Integration examples with popular AI frameworks
 
 ---
 
@@ -475,9 +565,13 @@ MIT License - See LICENSE file for details
 
 ## Acknowledgments
 
-Built using **Claude Code** as part of an exploration of LLM-driven development for implementing complex security specifications.
+This client implementation was built using **Claude Code** as part of an exploration of LLM-driven development for implementing complex security specifications.
 
-Special thanks to the **MCP specification authors** at Anthropic for designing a clean authorization model that balances security and developer experience.
+Special thanks to:
+- The **MCP specification authors** at Anthropic for designing a clean authorization model that balances security and developer experience
+- The OAuth working group for RFC 7591 (DCR) and RFC 7636 (PKCE)
+
+**Note:** This project demonstrates both a production-ready **client** and a reference **server** for testing. The client (`client.py`) is designed for production use; the server (`server/`) is for development and testing only.
 
 ---
 
@@ -490,6 +584,9 @@ Special thanks to the **MCP specification authors** at Anthropic for designing a
 
 ---
 
-**Questions?** See documentation or open an issue.
+**Ready to integrate?**
+1. Review [security/components/CLIENT_SECURITY_AUDIT.md](security/components/CLIENT_SECURITY_AUDIT.md) for production best practices
+2. Test with the reference server: `./quickstart.sh`
+3. Connect to real MCP servers by updating the `--server-url` parameter
 
-**Ready to deploy?** Review [security/](security/) for production readiness checklists and security recommendations.
+**Questions?** See documentation or open an issue.
