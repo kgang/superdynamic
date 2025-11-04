@@ -395,9 +395,22 @@ class MCPOAuthClient:
                     self.access_token = token_response["access_token"]
                     self.refresh_token = token_response.get("refresh_token")
 
-                    # Calculate token expiration
-                    expires_in = token_response.get("expires_in", 3600)
-                    self.token_expires_at = datetime.now() + timedelta(seconds=expires_in)
+                    # Calculate token expiration by parsing JWT exp claim (timezone-safe)
+                    # This ensures correct expiration regardless of client/server timezone
+                    try:
+                        from jose import jwt
+                        claims = jwt.decode(
+                            self.access_token,
+                            options={"verify_signature": False}
+                        )
+                        self.token_expires_at = datetime.fromtimestamp(
+                            claims['exp'],
+                            tz=timezone.utc
+                        ).replace(tzinfo=None)  # Store as naive UTC
+                    except Exception:
+                        # Fallback to expires_in if JWT parsing fails
+                        expires_in = token_response.get("expires_in", 3600)
+                        self.token_expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
 
                     print(f"✓ Access token obtained")
                     print(f"  Token: {self.access_token[:30]}...")
@@ -445,9 +458,21 @@ class MCPOAuthClient:
                     token_response = response.json()
                     self.access_token = token_response["access_token"]
 
-                    # Update expiration
-                    expires_in = token_response.get("expires_in", 3600)
-                    self.token_expires_at = datetime.now() + timedelta(seconds=expires_in)
+                    # Update expiration by parsing JWT exp claim (timezone-safe)
+                    try:
+                        from jose import jwt
+                        claims = jwt.decode(
+                            self.access_token,
+                            options={"verify_signature": False}
+                        )
+                        self.token_expires_at = datetime.fromtimestamp(
+                            claims['exp'],
+                            tz=timezone.utc
+                        ).replace(tzinfo=None)  # Store as naive UTC
+                    except Exception:
+                        # Fallback to expires_in if JWT parsing fails
+                        expires_in = token_response.get("expires_in", 3600)
+                        self.token_expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
 
                     print(f"✓ Token refreshed successfully")
                     print(f"  New token: {self.access_token[:30]}...")
@@ -471,7 +496,8 @@ class MCPOAuthClient:
             return False
 
         # Check if token is expired or about to expire (within 5 minutes)
-        if self.token_expires_at and datetime.now() >= self.token_expires_at - timedelta(minutes=5):
+        # Use UTC to match server timezone
+        if self.token_expires_at and datetime.utcnow() >= self.token_expires_at - timedelta(minutes=5):
             print("⚠ Token expired or expiring soon, refreshing...")
             return self.refresh_access_token()
 

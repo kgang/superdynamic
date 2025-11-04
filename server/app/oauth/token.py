@@ -180,8 +180,12 @@ async def token_endpoint(
                 detail="Invalid code_verifier"
             )
 
-        # Mark code as used
-        storage.mark_code_as_used(code)
+        # Atomically mark code as used (prevents race conditions)
+        if not storage.mark_code_as_used(code):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Authorization code already used or expired"
+            )
 
         # Generate tokens
         access_token, expires_in = create_access_token(

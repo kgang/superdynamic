@@ -58,10 +58,33 @@ class InMemoryStorage:
 
         return auth_code
 
-    def mark_code_as_used(self, code: str) -> None:
-        """Mark an authorization code as used."""
-        if code in self.authorization_codes:
-            self.authorization_codes[code].used = True
+    def mark_code_as_used(self, code: str) -> bool:
+        """
+        Atomically mark an authorization code as used.
+
+        Returns:
+            True if code was successfully marked as used
+            False if code doesn't exist, is already used, or is expired
+
+        This method provides atomic check-and-set to prevent race conditions
+        where multiple concurrent requests could reuse the same code.
+        """
+        auth_code = self.authorization_codes.get(code)
+
+        if not auth_code:
+            return False
+
+        # Check if already used
+        if auth_code.used:
+            return False
+
+        # Check if expired
+        if datetime.utcnow() > auth_code.expires_at:
+            return False
+
+        # Atomically mark as used
+        auth_code.used = True
+        return True
 
     def cleanup_expired_codes(self) -> None:
         """Remove expired authorization codes."""
