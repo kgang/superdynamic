@@ -1,0 +1,172 @@
+name: MCP Server Tests
+
+on:
+  push:
+    branches: [ main, claude/** ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache pip packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('server/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r server/requirements.txt
+
+    - name: Start MCP Server
+      run: |
+        cd server
+        # Start server in background with logs redirected
+        python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > server.log 2>&1 &
+        echo $! > server.pid
+        echo "Server started with PID $(cat server.pid)"
+      env:
+        JWT_SECRET_KEY: test-secret-key-for-ci-cd-testing-only
+        JWT_ALGORITHM: HS256
+        JWT_ACCESS_TOKEN_EXPIRE_MINUTES: 60
+        SERVER_URL: http://localhost:8000
+        DEBUG: true
+        LOG_LEVEL: INFO
+
+    - name: Wait for server to be ready
+      run: |
+        echo "Waiting for server to start..."
+        max_attempts=30
+        attempt=0
+
+        while [ $attempt -lt $max_attempts ]; do
+          if curl -s http://localhost:8000/health > /dev/null 2>&1; then
+            echo "Server is ready!"
+            exit 0
+          fi
+
+          echo "Attempt $((attempt + 1))/$max_attempts - Server not ready yet..."
+          sleep 2
+          attempt=$((attempt + 1))
+        done
+
+        echo "Server failed to start within 60 seconds"
+        echo "=== Server logs ==="
+        cat server/server.log
+        exit 1
+
+    - name: Run functional tests
+      run: |
+        cd server
+        python tests/test_flow.py
+
+    - name: Show server logs on failure
+      if: failure()
+      run: |
+        echo "=== Server Logs ==="
+        cat server/server.log || echo "No server logs found"
+
+    - name: Stop server
+      if: always()
+      run: |
+        if [ -f server/server.pid ]; then
+          SERVER_PID=$(cat server/server.pid)
+          echo "Stopping server (PID: $SERVER_PID)"
+          kill $SERVER_PID 2>/dev/null || true
+          # Wait for graceful shutdown
+          sleep 2
+          # Force kill if still running
+          kill -9 $SERVER_PID 2>/dev/null || true
+          rm server/server.pid
+        fi
+
+    - name: Upload server logs as artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: server-logs-python-${{ matrix.python-version }}
+        path: server/server.log
+        retention-days: 7
+
+  docker-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Build Docker image
+      run: |
+        cd server
+        docker build -t mcp-server:test .
+
+    - name: Start server with Docker Compose
+      run: |
+        cd server
+        docker compose up -d
+        echo "Waiting for Docker container to be ready..."
+        sleep 10
+
+    - name: Check server health
+      run: |
+        max_attempts=20
+        attempt=0
+
+        while [ $attempt -lt $max_attempts ]; do
+          if curl -s http://localhost:8000/health > /dev/null 2>&1; then
+            echo "Docker server is ready!"
+            exit 0
+          fi
+
+          echo "Attempt $((attempt + 1))/$max_attempts - Docker server not ready yet..."
+          sleep 3
+          attempt=$((attempt + 1))
+        done
+
+        echo "Docker server failed to start"
+        docker compose logs
+        exit 1
+
+    - name: Set up Python for test runner
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install test dependencies
+      run: |
+        pip install -r server/requirements.txt
+
+    - name: Run functional tests against Docker
+      run: |
+        cd server
+        python tests/test_flow.py
+
+    - name: Show Docker logs on failure
+      if: failure()
+      run: |
+        cd server
+        docker compose logs
+
+    - name: Stop Docker containers
+      if: always()
+      run: |
+        cd server
+        docker compose down -v
