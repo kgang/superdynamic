@@ -76,9 +76,13 @@ def verify_code_challenge(
 
     Returns:
         True if the verifier matches the challenge, False otherwise
+
+    Note:
+        Uses constant-time comparison to prevent timing attacks.
     """
     try:
         expected_challenge = generate_code_challenge(code_verifier, method)
-        return expected_challenge == code_challenge
+        # Use constant-time comparison to prevent timing attacks
+        return secrets.compare_digest(expected_challenge, code_challenge)
     except Exception:
         return False

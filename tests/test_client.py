@@ -13,7 +13,8 @@ from pathlib import Path
 import httpx
 
 # Import client classes (without running main)
-sys.path.insert(0, str(Path(__file__).parent))
+# Add parent directory to path since client.py is in root
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from client import MCPOAuthClient, ClientStorage, PKCEHelper
 
 

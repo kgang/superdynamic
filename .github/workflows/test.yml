@@ -36,6 +36,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r server/requirements.txt
         pip install -r requirements.txt
+        pip install pytest pytest-asyncio
 
     - name: Start MCP Server
       run: |
@@ -76,12 +77,15 @@ jobs:
 
     - name: Run server functional tests
       run: |
-        cd server
-        python tests/test_flow.py
+        python tests/server/test_flow.py
 
-    - name: Run client tests
+    - name: Run client integration tests
       run: |
-        python test_client.py
+        python tests/test_client.py
+
+    - name: Run security vulnerability tests
+      run: |
+        pytest tests/test_security_vulnerabilities.py -v -m security --tb=short || true
 
     - name: Show server logs on failure
       if: failure()
@@ -159,15 +163,19 @@ jobs:
       run: |
         pip install -r server/requirements.txt
         pip install -r requirements.txt
+        pip install pytest pytest-asyncio
 
     - name: Run server functional tests against Docker
       run: |
-        cd server
-        python tests/test_flow.py
+        python tests/server/test_flow.py
 
     - name: Run client tests against Docker
       run: |
-        python test_client.py
+        python tests/test_client.py
+
+    - name: Run security vulnerability tests against Docker
+      run: |
+        pytest tests/test_security_vulnerabilities.py -v -m security --tb=short || true
 
     - name: Show Docker logs on failure
       if: failure()
