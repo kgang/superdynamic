@@ -121,7 +121,7 @@ jobs:
     - name: Start server with Docker Compose
       run: |
         cd server
-        docker-compose up -d
+        docker compose up -d
         echo "Waiting for Docker container to be ready..."
         sleep 10
 
@@ -142,7 +142,7 @@ jobs:
         done
 
         echo "Docker server failed to start"
-        docker-compose logs
+        docker compose logs
         exit 1
 
     - name: Set up Python for test runner
@@ -163,7 +163,7 @@ jobs:
       if: failure()
       run: |
         cd server
-        docker-compose logs
+        docker compose logs
 
     - name: Stop Docker containers
       if: always()
