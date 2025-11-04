@@ -221,19 +221,18 @@ JSON-RPC 2.0 based tool invocation:
 ```
 ├── ARCHITECTURE.md           # Design synthesis and use cases
 ├── FLOW_DIAGRAM.md           # Visual authorization flow
-├── IMPLEMENTATION_SUMMARY.md # Comprehensive implementation and security fixes
 ├── mcp_auth_spec_summary.md  # MCP spec summary
 ├── claude.md                 # Development session notes
 ├── requirements.md           # Technical requirements
 ├── requirements.txt          # Client dependencies
 ├── client.py                 # MCP OAuth DCR Client (main deliverable)
-├── test_client.py            # Client integration test
 ├── security/                 # Security audits and assessments
 │   ├── README.md                   # Security overview
 │   ├── components/                 # Component-specific audits
 │   │   ├── SERVER_SECURITY_AUDIT.md
 │   │   └── CLIENT_SECURITY_AUDIT.md
 │   └── complete-audits/            # System-wide assessments
+│       ├── IMPLEMENTATION_SUMMARY.md        # Comprehensive implementation details
 │       ├── LLM_CODE_ASSESSMENT_FRAMEWORK.md
 │       ├── VERIFIED_CRITICAL_FINDINGS.md
 │       └── ASSESSMENT_SUMMARY.md

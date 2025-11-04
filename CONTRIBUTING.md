@@ -234,17 +234,25 @@ fix
 
 ```
 ├── client.py                 # MCP OAuth client (main contribution area)
-├── test_client.py           # Client tests
+├── tests/                   # Test suite
+│   ├── test_client.py      # Client tests
+│   └── server/             # Server tests
 ├── server/
 │   ├── app/
 │   │   ├── oauth/          # OAuth endpoints (DCR, authorize, token)
 │   │   └── mcp/            # MCP protocol (tools, protocol handling)
 │   └── tests/              # Server tests
-├── security/                # Security audits
-│   ├── SERVER_SECURITY_AUDIT.md  # Server security analysis
-│   └── CLIENT_SECURITY_AUDIT.md  # Client security analysis
+├── security/                # Security audits and assessments
+│   ├── components/         # Component-specific audits
+│   │   ├── SERVER_SECURITY_AUDIT.md
+│   │   └── CLIENT_SECURITY_AUDIT.md
+│   └── complete-audits/    # System-wide assessments
+│       ├── IMPLEMENTATION_SUMMARY.md
+│       ├── LLM_CODE_ASSESSMENT_FRAMEWORK.md
+│       ├── VERIFIED_CRITICAL_FINDINGS.md
+│       └── ASSESSMENT_SUMMARY.md
 ├── ARCHITECTURE.md          # Design documentation
-└── docs/                    # Additional documentation
+└── FLOW_DIAGRAM.md          # Authorization flow visualization
 ```
 
 ## 🐛 Reporting Issues
