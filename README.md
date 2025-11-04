@@ -113,11 +113,10 @@ python client.py --server-url http://localhost:8000 --refresh
 
 ```bash
 # Test server endpoints programmatically
-cd server
-python tests/test_flow.py
+pytest tests/server/test_flow.py
 
 # Test client with mock authorization (no browser required)
-python test_client.py
+pytest tests/test_client.py
 ```
 
 This demonstrates:
@@ -227,11 +226,23 @@ JSON-RPC 2.0 based tool invocation:
 ├── requirements.md           # Technical requirements
 ├── requirements.txt          # Client dependencies
 ├── client.py                 # MCP OAuth DCR Client (main deliverable)
-├── test_client.py            # Client integration test
-├── security/                 # Security audits (server + client)
-│   ├── README.md            # Security overview and recommendations
-│   ├── SERVER_SECURITY_AUDIT.md  # Server security analysis
-│   └── CLIENT_SECURITY_AUDIT.md  # Client security analysis
+├── security/                 # Security audits and assessments
+│   ├── README.md                   # Security overview
+│   ├── components/                 # Component-specific audits
+│   │   ├── SERVER_SECURITY_AUDIT.md
+│   │   └── CLIENT_SECURITY_AUDIT.md
+│   └── complete-audits/            # System-wide assessments
+│       ├── IMPLEMENTATION_SUMMARY.md        # Comprehensive implementation details
+│       ├── LLM_CODE_ASSESSMENT_FRAMEWORK.md
+│       ├── VERIFIED_CRITICAL_FINDINGS.md
+│       └── ASSESSMENT_SUMMARY.md
+├── tests/                    # Test suite
+│   ├── conftest.py          # Pytest fixtures
+│   ├── test_client.py       # Client integration tests
+│   ├── test_security_vulnerabilities.py # Security tests
+│   ├── README.md            # Test documentation
+│   └── server/
+│       └── test_flow.py     # Server OAuth flow tests
 └── server/                   # Mock MCP server implementation
     ├── app/
     │   ├── main.py          # FastAPI application
@@ -244,8 +255,6 @@ JSON-RPC 2.0 based tool invocation:
     │   └── mcp/             # MCP protocol
     │       ├── protocol.py  # JSON-RPC handler
     │       └── tools.py     # Example tools
-    ├── tests/
-    │   └── test_flow.py     # End-to-end server test
     ├── Dockerfile
     ├── docker-compose.yml
     └── README.md            # Server-specific documentation
@@ -345,7 +354,7 @@ cd server
 docker-compose up
 
 # Run test in another terminal
-python server/tests/test_flow.py
+pytest tests/server/test_flow.py
 ```
 
 **Test Coverage**:

@@ -61,14 +61,14 @@ docker compose up --build
 
 ```bash
 # Run all tests
-python test_client.py           # Client tests
-cd server && python tests/test_flow.py  # Server tests
+pytest tests/test_client.py           # Client tests
+pytest tests/server/test_flow.py      # Server tests
 
 # Start server first for tests
 cd server
 uvicorn app.main:app --port 8000 &
 cd ..
-python test_client.py
+pytest tests/test_client.py
 ```
 
 ### Code Style
@@ -179,8 +179,10 @@ Security improvements are important but should be discussed first:
 
 1. **Run all tests**:
    ```bash
-   python test_client.py
-   cd server && python tests/test_flow.py
+   pytest tests/test_client.py
+   pytest tests/server/test_flow.py
+   # Or run all tests at once
+   pytest tests/
    ```
 
 2. **Check code quality**:
@@ -232,17 +234,25 @@ fix
 
 ```
 ├── client.py                 # MCP OAuth client (main contribution area)
-├── test_client.py           # Client tests
+├── tests/                   # Test suite
+│   ├── test_client.py      # Client tests
+│   └── server/             # Server tests
 ├── server/
 │   ├── app/
 │   │   ├── oauth/          # OAuth endpoints (DCR, authorize, token)
 │   │   └── mcp/            # MCP protocol (tools, protocol handling)
 │   └── tests/              # Server tests
-├── security/                # Security audits
-│   ├── SERVER_SECURITY_AUDIT.md  # Server security analysis
-│   └── CLIENT_SECURITY_AUDIT.md  # Client security analysis
+├── security/                # Security audits and assessments
+│   ├── components/         # Component-specific audits
+│   │   ├── SERVER_SECURITY_AUDIT.md
+│   │   └── CLIENT_SECURITY_AUDIT.md
+│   └── complete-audits/    # System-wide assessments
+│       ├── IMPLEMENTATION_SUMMARY.md
+│       ├── LLM_CODE_ASSESSMENT_FRAMEWORK.md
+│       ├── VERIFIED_CRITICAL_FINDINGS.md
+│       └── ASSESSMENT_SUMMARY.md
 ├── ARCHITECTURE.md          # Design documentation
-└── docs/                    # Additional documentation
+└── FLOW_DIAGRAM.md          # Authorization flow visualization
 ```
 
 ## 🐛 Reporting Issues
