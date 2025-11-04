@@ -63,6 +63,7 @@ Tests the server using Docker Compose to validate containerized deployment.
   - Retention: 7 days
   - Name pattern: `server-logs-python-{version}`
   - Available in Actions tab → Workflow run → Artifacts
+  - Uses `actions/upload-artifact@v4` for improved performance
 
 ### Monitoring
 
@@ -109,6 +110,7 @@ python tests/test_flow.py
 
 **Caching:**
 - Pip packages cached using `~/.cache/pip` directory
+- Uses `actions/cache@v4` for improved performance
 - Cache key: `${{ runner.os }}-pip-${{ hashFiles('server/requirements.txt') }}`
 - Significantly reduces dependency installation time on subsequent runs
 
