@@ -169,4 +169,4 @@ jobs:
       if: always()
       run: |
         cd server
-        docker-compose down -v
+        docker compose down -v
