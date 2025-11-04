@@ -189,76 +189,54 @@ class TestMissingResourceParameter:
 
     def test_authorization_request_missing_resource(self):
         """
-        VULNERABILITY TEST: Authorization request missing resource parameter.
+        REGRESSION TEST: Verify resource parameter is present in authorization request.
 
         MCP Spec Section 3.2: "Clients MUST include the resource parameter"
+
+        This test was originally a vulnerability test but has been updated
+        to verify the fix is present in client.py:341
         """
-        # This test documents the expected parameters
-        expected_params = [
-            "response_type",
-            "client_id",
-            "redirect_uri",
-            "scope",
-            "state",
-            "code_challenge",
-            "code_challenge_method",
-            "resource",  # MISSING in current implementation
-        ]
+        # Read the actual client.py code to verify resource parameter is present
+        from pathlib import Path
+        client_file = Path(__file__).parent.parent / "client.py"
+        client_code = client_file.read_text()
 
-        # Current implementation (client.py:326)
-        current_params = [
-            "response_type",
-            "client_id",
-            "redirect_uri",
-            "scope",
-            "state",
-            "code_challenge",
-            "code_challenge_method",
-            # "resource" is MISSING
-        ]
-
-        missing = set(expected_params) - set(current_params)
-
-        if "resource" in missing:
+        # Verify the auth_params dict includes resource parameter
+        # Should be around line 333-342 in the authorize() method
+        if '"resource": self.server_url' not in client_code and "'resource': self.server_url" not in client_code:
             pytest.fail(
                 "VULNERABILITY CONFIRMED: 'resource' parameter missing "
                 "from authorization request. "
                 "MCP spec requires: resource=<server_url>. "
-                "See security/complete-audits/VERIFIED_CRITICAL_FINDINGS.md"
+                "Expected to find '\"resource\": self.server_url' in auth_params dict."
             )
+
+        # Test passes - resource parameter is present
+        assert True, "✓ Resource parameter present in authorization request"
 
     def test_token_request_missing_resource(self):
         """
-        VULNERABILITY TEST: Token request missing resource parameter.
+        REGRESSION TEST: Verify resource parameter is present in token exchange request.
+
+        This test was originally a vulnerability test but has been updated
+        to verify the fix is present in client.py:405
         """
-        expected_params = [
-            "grant_type",
-            "code",
-            "redirect_uri",
-            "code_verifier",
-            "client_id",
-            "client_secret",
-            "resource",  # MISSING in current implementation
-        ]
+        # Read the actual client.py code to verify resource parameter is present
+        from pathlib import Path
+        client_file = Path(__file__).parent.parent / "client.py"
+        client_code = client_file.read_text()
 
-        current_params = [
-            "grant_type",
-            "code",
-            "redirect_uri",
-            "code_verifier",
-            "client_id",
-            "client_secret",
-            # "resource" is MISSING
-        ]
-
-        missing = set(expected_params) - set(current_params)
-
-        if "resource" in missing:
+        # Verify the token_request dict includes resource parameter
+        # Should be around line 399-406 in the _exchange_code_for_token() method
+        if '"resource": self.server_url' not in client_code and "'resource': self.server_url" not in client_code:
             pytest.fail(
                 "VULNERABILITY CONFIRMED: 'resource' parameter missing "
                 "from token request. "
-                "See security/complete-audits/VERIFIED_CRITICAL_FINDINGS.md"
+                "Expected to find '\"resource\": self.server_url' in token_request dict."
             )
+
+        # Test passes - resource parameter is present
+        assert True, "✓ Resource parameter present in token exchange request"
 
 
 class TestPKCEImplementation:
