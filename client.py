@@ -30,74 +30,86 @@ except ImportError:
     sys.exit(1)
 
 
-class OAuthCallbackHandler(BaseHTTPRequestHandler):
-    """HTTP handler for OAuth callback."""
+def create_oauth_callback_handler(result_container: dict):
+    """
+    Factory function to create OAuth callback handler with isolated state.
 
-    # Class variable to store authorization code
-    authorization_code: Optional[str] = None
-    state: Optional[str] = None
-    error: Optional[str] = None
+    This uses a closure to avoid class variable pollution between concurrent
+    OAuth flows. Each handler instance gets its own result container.
 
-    def do_GET(self):
-        """Handle OAuth callback GET request."""
-        # Parse query parameters
-        parsed_url = urlparse(self.path)
-        query_params = parse_qs(parsed_url.query)
+    Args:
+        result_container: Dict to store callback results (code, state, error)
 
-        # Extract authorization code or error
-        if "code" in query_params:
-            OAuthCallbackHandler.authorization_code = query_params["code"][0]
-            OAuthCallbackHandler.state = query_params.get("state", [None])[0]
+    Returns:
+        Handler class for HTTPServer
+    """
+    class OAuthCallbackHandler(BaseHTTPRequestHandler):
+        """HTTP handler for OAuth callback (instance-isolated)."""
 
-            # Send success response
-            self.send_response(200)
-            self.send_header("Content-type", "text/html")
-            self.end_headers()
-            self.wfile.write(b"""
-                <html>
-                <head><title>Authorization Successful</title></head>
-                <body>
-                    <h1>Authorization Successful!</h1>
-                    <p>You can close this window and return to the terminal.</p>
-                </body>
-                </html>
-            """)
-        elif "error" in query_params:
-            OAuthCallbackHandler.error = query_params["error"][0]
-            error_description = query_params.get("error_description", ["Unknown error"])[0]
+        def do_GET(self):
+            """Handle OAuth callback GET request."""
+            # Parse query parameters
+            parsed_url = urlparse(self.path)
+            query_params = parse_qs(parsed_url.query)
 
-            # Send error response
-            self.send_response(400)
-            self.send_header("Content-type", "text/html")
-            self.end_headers()
-            self.wfile.write(f"""
-                <html>
-                <head><title>Authorization Failed</title></head>
-                <body>
-                    <h1>Authorization Failed</h1>
-                    <p>Error: {OAuthCallbackHandler.error}</p>
-                    <p>Description: {error_description}</p>
-                </body>
-                </html>
-            """.encode())
-        else:
-            # Invalid callback
-            self.send_response(400)
-            self.send_header("Content-type", "text/html")
-            self.end_headers()
-            self.wfile.write(b"""
-                <html>
-                <head><title>Invalid Request</title></head>
-                <body>
-                    <h1>Invalid Callback</h1>
-                    <p>No authorization code or error received.</p>
-                </body>
-                </html>
-            """)
+            # Extract authorization code or error
+            if "code" in query_params:
+                # Store in closure-captured result container (not class variable)
+                result_container["authorization_code"] = query_params["code"][0]
+                result_container["state"] = query_params.get("state", [None])[0]
 
-    def log_message(self, format, *args):
-        """Suppress server logs."""
-        pass
+                # Send success response
+                self.send_response(200)
+                self.send_header("Content-type", "text/html")
+                self.end_headers()
+                self.wfile.write(b"""
+                    <html>
+                    <head><title>Authorization Successful</title></head>
+                    <body>
+                        <h1>Authorization Successful!</h1>
+                        <p>You can close this window and return to the terminal.</p>
+                    </body>
+                    </html>
+                """)
+            elif "error" in query_params:
+                result_container["error"] = query_params["error"][0]
+                error_description = query_params.get("error_description", ["Unknown error"])[0]
+
+                # Send error response
+                self.send_response(400)
+                self.send_header("Content-type", "text/html")
+                self.end_headers()
+                error_msg = result_container["error"]
+                self.wfile.write(f"""
+                    <html>
+                    <head><title>Authorization Failed</title></head>
+                    <body>
+                        <h1>Authorization Failed</h1>
+                        <p>Error: {error_msg}</p>
+                        <p>Description: {error_description}</p>
+                    </body>
+                    </html>
+                """.encode())
+            else:
+                # Invalid callback
+                self.send_response(400)
+                self.send_header("Content-type", "text/html")
+                self.end_headers()
+                self.wfile.write(b"""
+                    <html>
+                    <head><title>Invalid Request</title></head>
+                    <body>
+                        <h1>Invalid Callback</h1>
+                        <p>No authorization code or error received.</p>
+                    </body>
+                    </html>
+                """)
+
+        def log_message(self, format, *args):
+            """Suppress server logs."""
+            pass
+
+    return OAuthCallbackHandler
 
 
 class PKCEHelper:
@@ -326,6 +338,7 @@ class MCPOAuthClient:
             "state": state,
             "code_challenge": self.code_challenge,
             "code_challenge_method": "S256",
+            "resource": self.server_url,  # MCP spec requirement (RFC 8707)
         }
 
         auth_url = f"{authorization_endpoint}?{urlencode(auth_params)}"
@@ -333,13 +346,18 @@ class MCPOAuthClient:
         print(f"✓ Opening browser for authorization...")
         print(f"  If browser doesn't open, visit: {auth_url}")
 
-        # Start local callback server
-        server = HTTPServer(("localhost", self.redirect_port), OAuthCallbackHandler)
+        # Create result container for this OAuth flow (isolated from other flows)
+        callback_result = {
+            "authorization_code": None,
+            "state": None,
+            "error": None
+        }
 
-        # Reset callback handler state
-        OAuthCallbackHandler.authorization_code = None
-        OAuthCallbackHandler.state = None
-        OAuthCallbackHandler.error = None
+        # Create handler with isolated state via closure
+        handler_class = create_oauth_callback_handler(callback_result)
+
+        # Start local callback server
+        server = HTTPServer(("localhost", self.redirect_port), handler_class)
 
         # Open browser
         webbrowser.open(auth_url)
@@ -352,10 +370,10 @@ class MCPOAuthClient:
         while time.time() - start_time < timeout:
             server.handle_request()
 
-            # Check if we got a response
-            if OAuthCallbackHandler.authorization_code:
-                authorization_code = OAuthCallbackHandler.authorization_code
-                returned_state = OAuthCallbackHandler.state
+            # Check if we got a response (via closure-captured result)
+            if callback_result["authorization_code"]:
+                authorization_code = callback_result["authorization_code"]
+                returned_state = callback_result["state"]
 
                 # Validate state
                 if returned_state != state:
@@ -367,8 +385,8 @@ class MCPOAuthClient:
                 # Exchange code for token
                 return self._exchange_code_for_token(authorization_code, token_endpoint)
 
-            elif OAuthCallbackHandler.error:
-                print(f"❌ Authorization error: {OAuthCallbackHandler.error}")
+            elif callback_result["error"]:
+                print(f"❌ Authorization error: {callback_result['error']}")
                 return False
 
         print("❌ Authorization timeout")
@@ -384,6 +402,7 @@ class MCPOAuthClient:
             "redirect_uri": self.redirect_uri,
             "code_verifier": self.code_verifier,
             "client_id": self.client_id,
+            "resource": self.server_url,  # MCP spec requirement (RFC 8707)
         }
 
         try:
@@ -448,6 +467,7 @@ class MCPOAuthClient:
             "grant_type": "refresh_token",
             "refresh_token": self.refresh_token,
             "client_id": self.client_id,
+            "resource": self.server_url,  # MCP spec requirement (RFC 8707)
         }
 
         try:
