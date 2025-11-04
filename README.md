@@ -34,9 +34,28 @@ This is **essential for multi-user SaaS platforms** and **third-party AI integra
 
 ---
 
+## Requirements
+
+- **Python 3.10+** (tested on 3.10, 3.11, 3.12)
+- **Docker** (optional, for containerized deployment)
+
 ## Quick Start
 
-### Run the Server
+### ⚡ Fastest Way
+
+```bash
+# One-command demo (starts server + runs client)
+./quickstart.sh
+```
+
+This script will:
+1. Install dependencies
+2. Start the MCP server
+3. Let you choose between automated test or interactive demo
+
+### Manual Setup
+
+#### Run the Server
 
 ```bash
 cd server
@@ -48,12 +67,57 @@ Server available at: `http://localhost:8000`
 - **API Docs**: http://localhost:8000/docs
 - **Health Check**: http://localhost:8000/health
 
+### Use the Client
+
+The client provides a complete implementation of DCR + OAuth flow with multi-client lifecycle management:
+
+```bash
+# Install client dependencies
+pip install -r requirements.txt
+
+# Run the full demo (interactive - opens browser for authorization)
+python client.py --server-url http://localhost:8000 --demo
+
+# Or use individual commands:
+
+# Register a new OAuth client
+python client.py --server-url http://localhost:8000 --register
+
+# Authorize (opens browser)
+python client.py --server-url http://localhost:8000 --authorize
+
+# List available tools
+python client.py --server-url http://localhost:8000 --list-tools
+
+# Call a tool
+python client.py --server-url http://localhost:8000 --call-tool get_weather \
+  --args '{"location": "San Francisco", "units": "fahrenheit"}'
+
+# List all registered clients
+python client.py --list-clients
+
+# Refresh access token
+python client.py --server-url http://localhost:8000 --refresh
+```
+
+**Client Features:**
+- ✅ Dynamic Client Registration (RFC 7591)
+- ✅ OAuth 2.0 Authorization Code Flow with PKCE
+- ✅ Automatic browser-based authorization
+- ✅ Token refresh handling
+- ✅ Multi-client lifecycle management (manage OAuth clients for multiple MCP servers)
+- ✅ Persistent storage of client credentials and tokens
+- ✅ Automatic token expiration checking
+
 ### Test the Full Flow
 
 ```bash
-# In another terminal
+# Test server endpoints programmatically
 cd server
 python tests/test_flow.py
+
+# Test client with mock authorization (no browser required)
+python test_client.py
 ```
 
 This demonstrates:
@@ -62,6 +126,8 @@ This demonstrates:
 3. OAuth authorization code flow
 4. Token exchange
 5. Authenticated MCP tool invocation
+6. Token refresh
+7. Multi-client management
 
 ---
 
@@ -132,7 +198,7 @@ JSON-RPC 2.0 based tool invocation:
 | Document | Purpose |
 |----------|---------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Design rationale, use cases, and "when to use" guidance |
-| [SECURITY_AUDIT.md](SECURITY_AUDIT.md) | Compliance analysis against MCP Authorization Spec |
+| [security/](security/) | Comprehensive security audits for server and client |
 | [FLOW_DIAGRAM.md](FLOW_DIAGRAM.md) | Visual walkthrough of the complete authorization flow |
 | [server/README.md](server/README.md) | Detailed API documentation and usage examples |
 | [mcp_auth_spec_summary.md](mcp_auth_spec_summary.md) | Summary of the MCP Authorization Specification |
@@ -155,11 +221,17 @@ JSON-RPC 2.0 based tool invocation:
 
 ```
 ├── ARCHITECTURE.md           # Design synthesis and use cases
-├── SECURITY_AUDIT.md         # Security compliance analysis
 ├── FLOW_DIAGRAM.md           # Visual authorization flow
 ├── mcp_auth_spec_summary.md  # MCP spec summary
 ├── claude.md                 # Development session notes
 ├── requirements.md           # Technical requirements
+├── requirements.txt          # Client dependencies
+├── client.py                 # MCP OAuth DCR Client (main deliverable)
+├── test_client.py            # Client integration test
+├── security/                 # Security audits (server + client)
+│   ├── README.md            # Security overview and recommendations
+│   ├── SERVER_SECURITY_AUDIT.md  # Server security analysis
+│   └── CLIENT_SECURITY_AUDIT.md  # Client security analysis
 └── server/                   # Mock MCP server implementation
     ├── app/
     │   ├── main.py          # FastAPI application
@@ -173,7 +245,7 @@ JSON-RPC 2.0 based tool invocation:
     │       ├── protocol.py  # JSON-RPC handler
     │       └── tools.py     # Example tools
     ├── tests/
-    │   └── test_flow.py     # End-to-end test
+    │   └── test_flow.py     # End-to-end server test
     ├── Dockerfile
     ├── docker-compose.yml
     └── README.md            # Server-specific documentation
@@ -228,7 +300,7 @@ See [ARCHITECTURE.md § When to Use This Approach](ARCHITECTURE.md#when-to-use-t
 4. **Persistent storage** (PostgreSQL, Redis, etc.)
 5. **Refresh token rotation** (OAuth 2.1 recommendation)
 
-See [SECURITY_AUDIT.md](SECURITY_AUDIT.md) for comprehensive security analysis.
+See [security/](security/) for comprehensive security audits of both server and client components.
 
 ---
 
@@ -291,6 +363,89 @@ See [server/README.md § Example Flow](server/README.md#example-flow) for detail
 
 ---
 
+## Troubleshooting
+
+### Server Issues
+
+**Server won't start:**
+```bash
+# Check if port 8000 is already in use
+lsof -i :8000
+# Kill the process if needed
+kill -9 <PID>
+```
+
+**Import errors:**
+```bash
+# Ensure all dependencies are installed
+pip install -r server/requirements.txt
+pip install -r requirements.txt
+```
+
+**JWT/Cryptography errors:**
+```bash
+# Reinstall cryptography dependencies
+pip install --force-reinstall cffi cryptography
+```
+
+### Client Issues
+
+**Browser doesn't open for OAuth:**
+- Manually copy the authorization URL from the terminal
+- Paste it into your browser
+- The redirect should still work
+
+**"Connection refused" errors:**
+- Ensure the server is running: `curl http://localhost:8000/health`
+- Check that you're using the correct server URL
+- Verify no firewall is blocking localhost:8000
+
+**Client storage issues:**
+```bash
+# Reset client storage
+rm .mcp_clients.json
+# Re-register client
+python client.py --server-url http://localhost:8000 --register
+```
+
+**Token expired errors:**
+```bash
+# Refresh the token
+python client.py --server-url http://localhost:8000 --refresh
+# Or re-authorize
+python client.py --server-url http://localhost:8000 --authorize
+```
+
+### Common Environment Issues
+
+**Python version too old:**
+```bash
+# Check version
+python3 --version
+# Needs Python 3.10 or higher
+```
+
+**Docker Compose issues:**
+```bash
+# Use docker compose (v2) instead of docker-compose (v1)
+docker compose up --build
+
+# Or install docker-compose v1
+sudo apt install docker-compose
+```
+
+### Getting Help
+
+1. Check the [server logs](server/server.log) or terminal output
+2. Review [ARCHITECTURE.md](ARCHITECTURE.md) for design details
+3. See [security/](security/) for security audits and recommendations
+4. Open an issue with:
+   - Python version (`python3 --version`)
+   - Error message and full traceback
+   - Steps to reproduce
+
+---
+
 ## Contributing
 
 This is a reference implementation for educational purposes. Contributions welcome for:
@@ -328,4 +483,4 @@ Special thanks to the **MCP specification authors** at Anthropic for designing a
 
 **Questions?** See documentation or open an issue.
 
-**Ready to deploy?** Review [SECURITY_AUDIT.md](SECURITY_AUDIT.md) for production readiness checklist.
+**Ready to deploy?** Review [security/](security/) for production readiness checklists and security recommendations.
